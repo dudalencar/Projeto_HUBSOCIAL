@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cadastro – Hub Social</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="navbar">
+  <div class="nav-container">
+    <a href="index.html" class="nav-logo">
+      <img src="img/logo_novo.png" alt="Hub Social" class="logo-img" />
+    </a>
+    <div class="nav-actions" style="margin-left:auto;">
+      <a href="login.html" class="btn-login">Entrar</a>
+      <a href="cadastro.html" class="btn-cadastro">Cadastre-se</a>
+    </div>
+  </div>
+</header>
+
+<main class="auth-page">
+  <div class="auth-card" style="max-width:520px;">
+    <div class="auth-logo">
+      <img src="img/logo_hubsocial_.png" alt="Hub Social" />
+    </div>
+    <h2>Criar conta</h2>
+    <p class="auth-sub">Comece a transformar a gestão da sua ONG hoje mesmo</p>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label for="nome">Nome completo *</label>
+        <input type="text" id="nome" placeholder="Maria Silva" />
+      </div>
+      <div class="form-group">
+        <label for="cargo">Cargo na ONG</label>
+        <input type="text" id="cargo" placeholder="Diretora" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="nome_ong">Nome da ONG *</label>
+      <input type="text" id="nome_ong" placeholder="Lar dos Bichinhos" />
+    </div>
+    <div class="form-group">
+      <label for="email_cad">E-mail *</label>
+      <input type="email" id="email_cad" placeholder="contato@suaong.org.br" />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="tel">Telefone</label>
+        <input type="tel" id="tel" placeholder="(11) 99999-9999" />
+      </div>
+      <div class="form-group">
+        <label for="cnpj">CNPJ (opcional)</label>
+        <input type="text" id="cnpj" placeholder="00.000.000/0001-00" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label for="senha_cad">Senha * <span style="font-size:11px;color:var(--gray-500)">(mín. 8 caracteres e 1 número)</span></label>
+        <input type="password" id="senha_cad" placeholder="Mínimo 8 caracteres" />
+      </div>
+      <div class="form-group">
+        <label for="conf_senha">Confirmar senha *</label>
+        <input type="password" id="conf_senha" placeholder="Repita a senha" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="plano_cad">Plano de interesse</label>
+      <select id="plano_cad">
+        <option value="semente">Plano Semente – R$ 25,90/mês</option>
+        <option value="impacto">Plano Impacto – R$ 49,90/mês</option>
+        <option value="transformacao">Plano Transformação – R$ 97,90/mês</option>
+      </select>
+    </div>
+
+    <div id="msgErrorCad" style="display:none; margin-top:4px; color:#ef4444; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:10px 14px; font-size:14px;"></div>
+
+    <button class="btn-form" id="btnCad" onclick="fazerCadastro()">Criar conta gratuita</button>
+
+    <div class="auth-footer">
+      Já tem conta? <a href="login.html">Entrar</a>
+    </div>
+  </div>
+</main>
+
+<script>
+// api.js
+// Conecta o front-end HTML com a API FastAPI (http://localhost:8000)
+// Coloque este arquivo na mesma pasta do index.html
+
+const API_URL = "http://localhost:8000";
+
+// ── Helpers de token (localStorage) ─────────────────────────
+
+function salvarToken(token, dados) {
+  localStorage.setItem("hs_token",    token);
+  localStorage.setItem("hs_nome",     dados.nome);
+  localStorage.setItem("hs_nome_ong", dados.nome_ong);
+  localStorage.setItem("hs_plano",    dados.plano);
+  localStorage.setItem("hs_id",       dados.usuario_id);
+}
+
+function getToken()   { return localStorage.getItem("hs_token");    }
+function getNome()    { return localStorage.getItem("hs_nome");     }
+function getOng()     { return localStorage.getItem("hs_nome_ong"); }
+function getPlano()   { return localStorage.getItem("hs_plano");    }
+function estaLogado() { return !!getToken(); }
+
+function logout() {
+  localStorage.clear();
+  window.location.href = "login.html";
+}
+
+// ── Request helper com JWT ───────────────────────────────────
+
+async function apiFetch(path, options = {}) {
+  const token = getToken();
+  const headers = {
+    "Content-Type": "application/json",
+    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    ...(options.headers || {}),
+  };
+
+  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    const msg = data.detail || `Erro ${res.status}`;
+    throw new Error(Array.isArray(msg) ? msg.map(e => e.msg).join(", ") : msg);
+  }
+  return data;
+}
+
+// ── AUTH ─────────────────────────────────────────────────────
+
+async function cadastrar(payload) {
+  const data = await apiFetch("/auth/cadastro", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  salvarToken(data.access_token, data);
+  return data;
+}
+
+async function login(email, senha) {
+  // OAuth2PasswordRequestForm espera form-data, não JSON
+  const form = new URLSearchParams();
+  form.append("username", email);
+  form.append("password", senha);
+
+  const res = await fetch(`${API_URL}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: form,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Erro ao fazer login.");
+  salvarToken(data.access_token, data);
+  return data;
+}
+
+async function getMeuPerfil() {
+  return apiFetch("/auth/me");
+}
+
+// ── DOAÇÕES ──────────────────────────────────────────────────
+
+async function listarDoacoes()        { return apiFetch("/doacoes/"); }
+async function criarDoacao(payload)   { return apiFetch("/doacoes/", { method: "POST", body: JSON.stringify(payload) }); }
+async function deletarDoacao(id)      { return apiFetch(`/doacoes/${id}`, { method: "DELETE" }); }
+async function atualizarStatusDoacao(id, status) {
+  return apiFetch(`/doacoes/${id}/status?novo_status=${status}`, { method: "PATCH" });
+}
+
+// ── VOLUNTÁRIOS ──────────────────────────────────────────────
+
+async function listarVoluntarios()       { return apiFetch("/voluntarios/"); }
+async function criarVoluntario(payload)  { return apiFetch("/voluntarios/", { method: "POST", body: JSON.stringify(payload) }); }
+async function deletarVoluntario(id)     { return apiFetch(`/voluntarios/${id}`, { method: "DELETE" }); }
+async function desativarVoluntario(id)   { return apiFetch(`/voluntarios/${id}/desativar`, { method: "PATCH" }); }
+
+// ── EVENTOS ──────────────────────────────────────────────────
+
+async function listarEventos()          { return apiFetch("/eventos/"); }
+async function criarEvento(payload)     { return apiFetch("/eventos/", { method: "POST", body: JSON.stringify(payload) }); }
+async function editarEvento(id, dados)  { return apiFetch(`/eventos/${id}`, { method: "PUT",  body: JSON.stringify(dados) }); }
+async function deletarEvento(id)        { return apiFetch(`/eventos/${id}`, { method: "DELETE" }); }
+
+// ── RELATÓRIOS ───────────────────────────────────────────────
+
+async function relatorioGeral()         { return apiFetch("/relatorios/visao-geral"); }
+async function relatorioDoacoesTipo()   { return apiFetch("/relatorios/doacoes-por-tipo"); }
+
+// ── Proteção de página: redireciona se não estiver logado ────
+
+function exigirLogin() {
+  if (!estaLogado()) {
+    window.location.href = "login.html";
+  }
+}
+
+// ── Preenche dados do usuário no dashboard ───────────────────
+
+function preencherDashboard() {
+  exigirLogin();
+  const nome  = getNome()?.split(" ")[0] || "Usuário";
+  const ong   = getOng()  || "Minha ONG";
+  const plano = getPlano() || "semente";
+
+  const elNome  = document.getElementById("dash-user-name");
+  const elOng   = document.getElementById("sb-ong");
+  const elTitulo= document.getElementById("dash-titulo");
+  const elAvatar= document.getElementById("dash-avatar");
+  const elPlano = document.getElementById("sb-plano");
+
+  if (elNome)   elNome.textContent   = `Olá, ${nome}!`;
+  if (elOng)    elOng.textContent    = ong;
+  if (elTitulo) elTitulo.textContent = `Bem-vindo(a), ${nome} 👋`;
+  if (elAvatar) elAvatar.textContent = nome[0].toUpperCase();
+  if (elPlano)  elPlano.textContent  = `Plano ${plano.charAt(0).toUpperCase() + plano.slice(1)}`;
+}
+
+</script>
+<script>
+  // Máscara telefone
+  document.getElementById('tel').addEventListener('input', function(e) {
+    let v = e.target.value.replace(/\D/g, '');
+    if (v.length <= 10) v = v.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3');
+    else v = v.replace(/(\d{2})(\d{5})(\d{0,4})/, '($1) $2-$3');
+    e.target.value = v;
+  });
+
+  // Máscara CNPJ
+  document.getElementById('cnpj').addEventListener('input', function(e) {
+    let v = e.target.value.replace(/\D/g, '').substring(0, 14);
+    v = v.replace(/^(\d{2})(\d)/, '$1.$2');
+    v = v.replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3');
+    v = v.replace(/\.(\d{3})(\d)/, '.$1/$2');
+    v = v.replace(/(\d{4})(\d)/, '$1-$2');
+    e.target.value = v;
+  });
+
+  // Pré-selecionar plano vindo da página de planos
+  const params = new URLSearchParams(location.search);
+  const planoParam = params.get('plano');
+  if (planoParam) {
+    const sel = document.getElementById('plano_cad');
+    if ([...sel.options].some(o => o.value === planoParam)) sel.value = planoParam;
+  }
+
+  async function fazerCadastro() {
+    const msg  = document.getElementById('msgErrorCad');
+    const btn  = document.getElementById('btnCad');
+    msg.style.display = 'none';
+
+    const nome     = document.getElementById('nome').value.trim();
+    const email    = document.getElementById('email_cad').value.trim();
+    const senha    = document.getElementById('senha_cad').value;
+    const conf     = document.getElementById('conf_senha').value;
+    const nome_ong = document.getElementById('nome_ong').value.trim();
+    const telefone = document.getElementById('tel').value;
+    const cargo    = document.getElementById('cargo').value.trim();
+    const cnpj     = document.getElementById('cnpj').value;
+    const plano    = document.getElementById('plano_cad').value;
+
+    // Validações no front
+    if (!nome || !email || !senha || !nome_ong) {
+      msg.textContent = 'Preencha os campos obrigatórios (*).';
+      msg.style.display = 'block'; return;
+    }
+    if (!email.includes('@')) {
+      msg.textContent = 'Insira um e-mail válido.';
+      msg.style.display = 'block'; return;
+    }
+    if (senha.length < 8) {
+      msg.textContent = 'A senha deve ter no mínimo 8 caracteres.';
+      msg.style.display = 'block'; return;
+    }
+    if (!/\d/.test(senha)) {
+      msg.textContent = 'A senha deve conter ao menos um número.';
+      msg.style.display = 'block'; return;
+    }
+    if (senha !== conf) {
+      msg.textContent = 'As senhas não coincidem.';
+      msg.style.display = 'block'; return;
+    }
+
+    btn.textContent = 'Criando conta...';
+    btn.disabled = true;
+
+    try {
+      await cadastrar({ nome, email, senha, telefone, cargo, nome_ong, cnpj, plano });
+      window.location.href = 'dashboard.html';
+    } catch (e) {
+      msg.textContent = e.message;
+      msg.style.display = 'block';
+      btn.textContent = 'Criar conta gratuita';
+      btn.disabled = false;
+    }
+  }
+</script>
+</body>
+</html>

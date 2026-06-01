@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard – Hub Social</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --blue-dark:#0d2d5e; --blue-mid:#1a4a8a; --blue-light:#3b82c4;
+      --blue-pale:#dbeafe; --orange:#f59e0b; --white:#ffffff;
+      --gray-50:#f8fafc; --gray-100:#f1f5f9; --gray-300:#cbd5e1;
+      --gray-500:#64748b; --gray-700:#334155; --text:#0f172a;
+      --radius:14px; --radius-sm:8px;
+      --shadow:0 4px 24px rgba(13,45,94,.12);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'DM Sans', sans-serif; color: var(--text); background: var(--gray-50); display: flex; height: 100vh; overflow: hidden; }
+    a { text-decoration: none; color: inherit; }
+
+    .sidebar { width: 240px; flex-shrink: 0; background: var(--blue-dark); display: flex; flex-direction: column; height: 100vh; overflow-y: auto; }
+    .sb-logo { padding: 24px 20px; border-bottom: 1px solid rgba(255,255,255,.08); }
+    .sb-logo img { height: 44px; }
+    .sb-menu { padding: 16px 12px; flex: 1; }
+    .sb-section { font-size: 10px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(255,255,255,.35); padding: 14px 8px 6px; }
+    .sb-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-sm); color: rgba(255,255,255,.7); font-size: 14px; font-weight: 500; cursor: pointer; transition: all .2s; margin-bottom: 2px; }
+    .sb-item:hover { background: rgba(255,255,255,.08); color: white; }
+    .sb-item.active { background: var(--blue-light); color: white; font-weight: 600; }
+    .sb-icon { font-size: 17px; }
+    .sb-plano { font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; background: var(--orange); color: var(--blue-dark); padding: 2px 8px; border-radius: 99px; margin-left: auto; }
+    .sb-ong-name { padding: 16px 20px; border-top: 1px solid rgba(255,255,255,.08); font-size: 12px; color: rgba(255,255,255,.5); }
+    .sb-ong-name strong { display: block; color: rgba(255,255,255,.85); font-size: 13px; margin-bottom: 6px; }
+    .btn-logout { font-size: 13px; color: rgba(255,255,255,.6); padding: 8px 12px; border-radius: 6px; cursor: pointer; background: none; border: none; width: 100%; text-align: left; font-family: inherit; }
+    .btn-logout:hover { background: rgba(255,0,0,.15); color: #ff8888; }
+
+    .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .topbar { background: var(--white); border-bottom: 1px solid var(--gray-100); padding: 0 28px; height: 60px; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; }
+    .topbar-title { font-family: 'Sora',sans-serif; font-size: 20px; font-weight: 800; color: var(--blue-dark); }
+    .topbar-right { display: flex; align-items: center; gap: 14px; }
+    .user-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--blue-mid); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 15px; }
+    .user-name { font-size: 14px; font-weight: 600; color: var(--gray-700); }
+    .content { flex: 1; overflow-y: auto; padding: 28px; }
+
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 28px; }
+    .metric-card { background: var(--white); border-radius: var(--radius); padding: 22px 24px; border: 1px solid var(--gray-100); display: flex; align-items: center; gap: 16px; }
+    .metric-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+    .metric-icon.blue   { background: var(--blue-pale); }
+    .metric-icon.orange { background: #fef3c7; }
+    .metric-icon.green  { background: #dcfce7; }
+    .metric-icon.purple { background: #f3e8ff; }
+    .metric-val   { font-family: 'Sora',sans-serif; font-size: 26px; font-weight: 800; color: var(--blue-dark); }
+    .metric-label { font-size: 13px; color: var(--gray-500); margin-top: 2px; }
+
+    .content-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 24px; }
+    .panel { background: var(--white); border-radius: var(--radius); border: 1px solid var(--gray-100); overflow: hidden; }
+    .panel-header { padding: 18px 24px; border-bottom: 1px solid var(--gray-100); display: flex; align-items: center; justify-content: space-between; }
+    .panel-header h3 { font-family: 'Sora',sans-serif; font-size: 16px; font-weight: 700; color: var(--blue-dark); }
+    .btn-add { background: var(--blue-dark); color: white; font-size: 13px; font-weight: 600; padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; font-family: inherit; transition: background .2s; }
+    .btn-add:hover { background: var(--blue-mid); }
+    table { width: 100%; border-collapse: collapse; }
+    th { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--gray-500); padding: 10px 20px; background: var(--gray-50); text-align: left; }
+    td { font-size: 14px; color: var(--gray-700); padding: 12px 20px; border-top: 1px solid var(--gray-100); }
+    tr:hover td { background: var(--gray-50); }
+    .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 99px; }
+    .badge.green  { background: #dcfce7; color: #166534; }
+    .badge.orange { background: #fef3c7; color: #92400e; }
+    .badge.blue   { background: var(--blue-pale); color: var(--blue-dark); }
+    .badge.red    { background: #fee2e2; color: #991b1b; }
+
+    .empty-row td { text-align: center; color: var(--gray-300); font-size: 13px; padding: 24px; }
+
+    /* Modal */
+    .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 200; align-items: center; justify-content: center; }
+    .modal-overlay.open { display: flex; }
+    .modal { background: white; border-radius: 16px; padding: 32px; width: 100%; max-width: 440px; box-shadow: 0 24px 64px rgba(0,0,0,.2); }
+    .modal h3 { font-family: 'Sora',sans-serif; font-size: 20px; font-weight: 800; color: var(--blue-dark); margin-bottom: 20px; }
+    .modal .form-group { margin-bottom: 14px; }
+    .modal label { display: block; font-size: 13px; font-weight: 600; color: var(--blue-dark); margin-bottom: 5px; }
+    .modal input, .modal select { width: 100%; padding: 10px 14px; border-radius: 8px; border: 1.5px solid var(--gray-300); font-size: 14px; font-family: inherit; outline: none; }
+    .modal input:focus, .modal select:focus { border-color: var(--blue-light); }
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .btn-cancel { flex: 1; padding: 11px; border: 1.5px solid var(--gray-300); border-radius: 8px; background: white; font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit; color: var(--gray-700); }
+    .btn-save   { flex: 2; padding: 11px; border: none; border-radius: 8px; background: var(--blue-dark); color: white; font-size: 14px; font-weight: 700; cursor: pointer; font-family: inherit; }
+    .btn-save:hover { background: var(--blue-mid); }
+    .msg-modal { display: none; color: #ef4444; font-size: 13px; margin-top: 8px; }
+
+    /* Bloqueio de plano */
+    .lock-msg { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 12px 16px; font-size: 13px; color: #92400e; margin: 16px 20px; }
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sb-logo">
+    <img src="img/logo_novo.png" alt="Hub Social" />
+  </div>
+  <nav class="sb-menu">
+    <div class="sb-section">Principal</div>
+    <div class="sb-item active" onclick="mostrarPainel('dashboard')"><span class="sb-icon">📊</span> Dashboard</div>
+    <div class="sb-section">Gestão</div>
+    <div class="sb-item" onclick="mostrarPainel('doacoes')"><span class="sb-icon">💰</span> Doações</div>
+    <div class="sb-item" onclick="mostrarPainel('voluntarios')"><span class="sb-icon">👥</span> Voluntários</div>
+    <div class="sb-item" onclick="mostrarPainel('eventos')">
+      <span class="sb-icon">📅</span> Eventos
+      <span class="sb-plano" id="badge-eventos" style="display:none">Impacto+</span>
+    </div>
+    <div class="sb-item" onclick="mostrarPainel('relatorios')">
+      <span class="sb-icon">📋</span> Relatórios
+      <span class="sb-plano" id="badge-relatorios" style="display:none">Impacto+</span>
+    </div>
+  </nav>
+  <div class="sb-ong-name">
+    <strong id="sb-ong">Minha ONG</strong>
+    <span id="sb-plano-label" style="font-size:11px;color:rgba(255,255,255,.4);display:block;margin-bottom:8px;"></span>
+    <button class="btn-logout" onclick="logout()">↩ Sair</button>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="dash-titulo">Visão Geral</div>
+    <div class="topbar-right">
+      <div id="dash-user-name" class="user-name">Olá!</div>
+      <div class="user-avatar" id="dash-avatar">?</div>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ── PAINEL: DASHBOARD ── -->
+    <div id="painel-dashboard">
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-icon blue">👥</div>
+          <div><div class="metric-val" id="m-voluntarios">–</div><div class="metric-label">Voluntários ativos</div></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon orange">💰</div>
+          <div><div class="metric-val" id="m-doacoes-valor">–</div><div class="metric-label">Total arrecadado</div></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon green">📅</div>
+          <div><div class="metric-val" id="m-eventos">–</div><div class="metric-label">Eventos cadastrados</div></div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-icon purple">💛</div>
+          <div><div class="metric-val" id="m-doacoes-total">–</div><div class="metric-label">Total de doações</div></div>
+        </div>
+      </div>
+
+      <div class="content-grid">
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Doações Recentes</h3>
+            <button class="btn-add" onclick="mostrarPainel('doacoes')">Ver todas</button>
+          </div>
+          <table>
+            <thead><tr><th>Doador</th><th>Tipo</th><th>Valor</th><th>Status</th></tr></thead>
+            <tbody id="tb-doacoes-dash"></tbody>
+          </table>
+        </div>
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Próximos Eventos</h3>
+            <button class="btn-add" onclick="mostrarPainel('eventos')">Ver todos</button>
+          </div>
+          <table>
+            <thead><tr><th>Evento</th><th>Data</th><th>Tipo</th></tr></thead>
+            <tbody id="tb-eventos-dash"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PAINEL: DOAÇÕES ── -->
+    <div id="painel-doacoes" style="display:none">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Doações</h3>
+          <button class="btn-add" onclick="abrirModalDoacao()">+ Nova doação</button>
+        </div>
+        <table>
+          <thead><tr><th>Doador</th><th>Tipo</th><th>Valor/Qtd</th><th>Status</th><th>Ação</th></tr></thead>
+          <tbody id="tb-doacoes"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── PAINEL: VOLUNTÁRIOS ── -->
+    <div id="painel-voluntarios" style="display:none">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Voluntários</h3>
+          <button class="btn-add" onclick="abrirModalVoluntario()">+ Novo voluntário</button>
+        </div>
+        <table>
+          <thead><tr><th>Nome</th><th>Área</th><th>Telefone</th><th>Status</th><th>Ação</th></tr></thead>
+          <tbody id="tb-voluntarios"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── PAINEL: EVENTOS ── -->
+    <div id="painel-eventos" style="display:none">
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Eventos</h3>
+          <button class="btn-add" id="btn-novo-evento" onclick="abrirModalEvento()">+ Novo evento</button>
+        </div>
+        <div id="lock-eventos" class="lock-msg" style="display:none">
+          🔒 Calendário de Eventos disponível a partir do <strong>Plano Impacto</strong>. Faça upgrade para acessar.
+        </div>
+        <table id="table-eventos">
+          <thead><tr><th>Evento</th><th>Tipo</th><th>Data</th><th>Local</th><th>Ação</th></tr></thead>
+          <tbody id="tb-eventos"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── PAINEL: RELATÓRIOS ── -->
+    <div id="painel-relatorios" style="display:none">
+      <div id="lock-relatorios" class="lock-msg" style="display:none">
+        🔒 Relatórios disponíveis a partir do <strong>Plano Impacto</strong>. Faça upgrade para acessar.
+      </div>
+      <div id="relatorio-content" style="display:none">
+        <div class="metrics-grid" id="rel-metrics"></div>
+        <div class="panel" style="margin-top:0">
+          <div class="panel-header"><h3>Doações por tipo</h3></div>
+          <table>
+            <thead><tr><th>Tipo</th><th>Quantidade</th></tr></thead>
+            <tbody id="tb-rel-tipos"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- MODAL: NOVA DOAÇÃO -->
+<div class="modal-overlay" id="modal-doacao">
+  <div class="modal">
+    <h3>Nova Doação</h3>
+    <div class="form-group"><label>Doador *</label><input id="d-doador" placeholder="Nome do doador" /></div>
+    <div class="form-group">
+      <label>Tipo *</label>
+      <select id="d-tipo">
+        <option value="financeira">Financeira</option>
+        <option value="especie">Espécie (ração, medicamento, etc)</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Valor / Quantidade</label><input id="d-valor" placeholder="Ex: 200.00 ou 20kg" /></div>
+    <div class="form-group"><label>Descrição</label><input id="d-descricao" placeholder="Opcional" /></div>
+    <div class="msg-modal" id="msg-doacao"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharModal('modal-doacao')">Cancelar</button>
+      <button class="btn-save" onclick="salvarDoacao()">Salvar doação</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: NOVO VOLUNTÁRIO -->
+<div class="modal-overlay" id="modal-voluntario">
+  <div class="modal">
+    <h3>Novo Voluntário</h3>
+    <div class="form-group"><label>Nome *</label><input id="v-nome" placeholder="Nome completo" /></div>
+    <div class="form-group"><label>Área de atuação</label><input id="v-area" placeholder="Ex: veterinária, transporte" /></div>
+    <div class="form-group"><label>Telefone</label><input id="v-telefone" placeholder="(11) 99999-9999" /></div>
+    <div class="form-group"><label>E-mail</label><input id="v-email" placeholder="voluntario@email.com" /></div>
+    <div class="msg-modal" id="msg-voluntario"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharModal('modal-voluntario')">Cancelar</button>
+      <button class="btn-save" onclick="salvarVoluntario()">Salvar voluntário</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: NOVO EVENTO -->
+<div class="modal-overlay" id="modal-evento">
+  <div class="modal">
+    <h3>Novo Evento</h3>
+    <div class="form-group"><label>Nome do evento *</label><input id="e-nome" placeholder="Feira de Adoção" /></div>
+    <div class="form-group">
+      <label>Tipo</label>
+      <select id="e-tipo">
+        <option value="adocao">Adoção</option>
+        <option value="vacinacao">Vacinação</option>
+        <option value="castracao">Castração</option>
+        <option value="arrecadacao">Arrecadação</option>
+        <option value="outro">Outro</option>
+      </select>
+    </div>
+    <div class="form-group"><label>Data *</label><input type="date" id="e-data" /></div>
+    <div class="form-group"><label>Local</label><input id="e-local" placeholder="Endereço do evento" /></div>
+    <div class="form-group"><label>Descrição</label><input id="e-descricao" placeholder="Opcional" /></div>
+    <div class="msg-modal" id="msg-evento"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="fecharModal('modal-evento')">Cancelar</button>
+      <button class="btn-save" onclick="salvarEvento()">Salvar evento</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// api.js
+// Conecta o front-end HTML com a API FastAPI (http://localhost:8000)
+// Coloque este arquivo na mesma pasta do index.html
+
+const API_URL = "http://localhost:8000";
+
+// ── Helpers de token (localStorage) ─────────────────────────
+
+function salvarToken(token, dados) {
+  localStorage.setItem("hs_token",    token);
+  localStorage.setItem("hs_nome",     dados.nome);
+  localStorage.setItem("hs_nome_ong", dados.nome_ong);
+  localStorage.setItem("hs_plano",    dados.plano);
+  localStorage.setItem("hs_id",       dados.usuario_id);
+}
+
+function getToken()   { return localStorage.getItem("hs_token");    }
+function getNome()    { return localStorage.getItem("hs_nome");     }
+function getOng()     { return localStorage.getItem("hs_nome_ong"); }
+function getPlano()   { return localStorage.getItem("hs_plano");    }
+function estaLogado() { return !!getToken(); }
+
+function logout() {
+  localStorage.clear();
+  window.location.href = "login.html";
+}
+
+// ── Request helper com JWT ───────────────────────────────────
+
+async function apiFetch(path, options = {}) {
+  const token = getToken();
+  const headers = {
+    "Content-Type": "application/json",
+    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    ...(options.headers || {}),
+  };
+
+  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    const msg = data.detail || `Erro ${res.status}`;
+    throw new Error(Array.isArray(msg) ? msg.map(e => e.msg).join(", ") : msg);
+  }
+  return data;
+}
+
+// ── AUTH ─────────────────────────────────────────────────────
+
+async function cadastrar(payload) {
+  const data = await apiFetch("/auth/cadastro", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  salvarToken(data.access_token, data);
+  return data;
+}
+
+async function login(email, senha) {
+  // OAuth2PasswordRequestForm espera form-data, não JSON
+  const form = new URLSearchParams();
+  form.append("username", email);
+  form.append("password", senha);
+
+  const res = await fetch(`${API_URL}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: form,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Erro ao fazer login.");
+  salvarToken(data.access_token, data);
+  return data;
+}
+
+async function getMeuPerfil() {
+  return apiFetch("/auth/me");
+}
+
+// ── DOAÇÕES ──────────────────────────────────────────────────
+
+async function listarDoacoes()        { return apiFetch("/doacoes/"); }
+async function criarDoacao(payload)   { return apiFetch("/doacoes/", { method: "POST", body: JSON.stringify(payload) }); }
+async function deletarDoacao(id)      { return apiFetch(`/doacoes/${id}`, { method: "DELETE" }); }
+async function atualizarStatusDoacao(id, status) {
+  return apiFetch(`/doacoes/${id}/status?novo_status=${status}`, { method: "PATCH" });
+}
+
+// ── VOLUNTÁRIOS ──────────────────────────────────────────────
+
+async function listarVoluntarios()       { return apiFetch("/voluntarios/"); }
+async function criarVoluntario(payload)  { return apiFetch("/voluntarios/", { method: "POST", body: JSON.stringify(payload) }); }
+async function deletarVoluntario(id)     { return apiFetch(`/voluntarios/${id}`, { method: "DELETE" }); }
+async function desativarVoluntario(id)   { return apiFetch(`/voluntarios/${id}/desativar`, { method: "PATCH" }); }
+
+// ── EVENTOS ──────────────────────────────────────────────────
+
+async function listarEventos()          { return apiFetch("/eventos/"); }
+async function criarEvento(payload)     { return apiFetch("/eventos/", { method: "POST", body: JSON.stringify(payload) }); }
+async function editarEvento(id, dados)  { return apiFetch(`/eventos/${id}`, { method: "PUT",  body: JSON.stringify(dados) }); }
+async function deletarEvento(id)        { return apiFetch(`/eventos/${id}`, { method: "DELETE" }); }
+
+// ── RELATÓRIOS ───────────────────────────────────────────────
+
+async function relatorioGeral()         { return apiFetch("/relatorios/visao-geral"); }
+async function relatorioDoacoesTipo()   { return apiFetch("/relatorios/doacoes-por-tipo"); }
+
+// ── Proteção de página: redireciona se não estiver logado ────
+
+function exigirLogin() {
+  if (!estaLogado()) {
+    window.location.href = "login.html";
+  }
+}
+
+// ── Preenche dados do usuário no dashboard ───────────────────
+
+function preencherDashboard() {
+  exigirLogin();
+  const nome  = getNome()?.split(" ")[0] || "Usuário";
+  const ong   = getOng()  || "Minha ONG";
+  const plano = getPlano() || "semente";
+
+  const elNome  = document.getElementById("dash-user-name");
+  const elOng   = document.getElementById("sb-ong");
+  const elTitulo= document.getElementById("dash-titulo");
+  const elAvatar= document.getElementById("dash-avatar");
+  const elPlano = document.getElementById("sb-plano");
+
+  if (elNome)   elNome.textContent   = `Olá, ${nome}!`;
+  if (elOng)    elOng.textContent    = ong;
+  if (elTitulo) elTitulo.textContent = `Bem-vindo(a), ${nome} 👋`;
+  if (elAvatar) elAvatar.textContent = nome[0].toUpperCase();
+  if (elPlano)  elPlano.textContent  = `Plano ${plano.charAt(0).toUpperCase() + plano.slice(1)}`;
+}
+
+</script>
+<script>
+  // ── Proteção: redireciona se não logado ─────────────────
+  exigirLogin();
+
+  // ── Preenche dados do usuário na sidebar/topbar ─────────
+  preencherDashboard();
+
+  const planoAtual = getPlano();
+
+  // Mostra badge "Impacto+" nos itens bloqueados se for plano semente
+  if (planoAtual === 'semente') {
+    document.getElementById('badge-eventos').style.display   = 'inline';
+    document.getElementById('badge-relatorios').style.display = 'inline';
+  }
+
+  // Plano na sidebar
+  document.getElementById('sb-plano-label').textContent =
+    'Plano ' + planoAtual.charAt(0).toUpperCase() + planoAtual.slice(1);
+
+  // ── Navegação entre painéis ──────────────────────────────
+  function mostrarPainel(nome) {
+    ['dashboard','doacoes','voluntarios','eventos','relatorios'].forEach(p => {
+      document.getElementById('painel-' + p).style.display = p === nome ? '' : 'none';
+    });
+    // Atualiza item ativo na sidebar
+    document.querySelectorAll('.sb-item').forEach(el => el.classList.remove('active'));
+    const map = { dashboard:0, doacoes:1, voluntarios:2, eventos:3, relatorios:4 };
+    document.querySelectorAll('.sb-item')[map[nome]]?.classList.add('active');
+
+    const titulos = { dashboard:'Visão Geral', doacoes:'Doações', voluntarios:'Voluntários', eventos:'Eventos', relatorios:'Relatórios' };
+    document.getElementById('dash-titulo').textContent = titulos[nome] || nome;
+
+    if (nome === 'doacoes')     carregarDoacoes();
+    if (nome === 'voluntarios') carregarVoluntarios();
+    if (nome === 'eventos')     carregarEventos();
+    if (nome === 'relatorios')  carregarRelatorios();
+    if (nome === 'dashboard')   carregarDashboard();
+  }
+
+  // ── Badge de status ──────────────────────────────────────
+  function badgeStatus(s) {
+    const map = { confirmada:'green', recebida:'green', ativo:'green', pendente:'orange', cancelada:'red', inativo:'red' };
+    const cl = map[s?.toLowerCase()] || 'blue';
+    return `<span class="badge ${cl}">${s}</span>`;
+  }
+
+  // ── DASHBOARD ────────────────────────────────────────────
+  async function carregarDashboard() {
+    try {
+      const [doacoes, voluntarios, eventos] = await Promise.all([
+        listarDoacoes(), listarVoluntarios(), listarEventos().catch(() => [])
+      ]);
+
+      // Métricas
+      const ativos  = voluntarios.filter(v => v.ativo).length;
+      const totalD  = doacoes.length;
+      const valor   = doacoes
+        .filter(d => d.tipo === 'financeira' && d.status === 'confirmada')
+        .reduce((s, d) => s + (parseFloat(d.valor) || 0), 0);
+
+      document.getElementById('m-voluntarios').textContent   = ativos;
+      document.getElementById('m-doacoes-total').textContent = totalD;
+      document.getElementById('m-eventos').textContent       = eventos.length;
+      document.getElementById('m-doacoes-valor').textContent = 'R$ ' + valor.toLocaleString('pt-BR', {minimumFractionDigits:2});
+
+      // Tabela doações (últimas 5)
+      const tbD = document.getElementById('tb-doacoes-dash');
+      tbD.innerHTML = doacoes.slice(-5).reverse().map(d => `
+        <tr>
+          <td>${d.doador}</td>
+          <td>${d.tipo}</td>
+          <td>${d.valor || '–'}</td>
+          <td>${badgeStatus(d.status)}</td>
+        </tr>`).join('') || '<tr class="empty-row"><td colspan="4">Nenhuma doação ainda</td></tr>';
+
+      // Tabela eventos (próximos 4)
+      const tbE = document.getElementById('tb-eventos-dash');
+      tbE.innerHTML = eventos.slice(0,4).map(e => `
+        <tr>
+          <td>${e.nome}</td>
+          <td>${formatarData(e.data)}</td>
+          <td><span class="badge blue">${e.tipo || '–'}</span></td>
+        </tr>`).join('') || '<tr class="empty-row"><td colspan="3">Nenhum evento</td></tr>';
+
+    } catch(e) { console.error(e); }
+  }
+
+  // ── DOAÇÕES ──────────────────────────────────────────────
+  async function carregarDoacoes() {
+    const tb = document.getElementById('tb-doacoes');
+    tb.innerHTML = '<tr class="empty-row"><td colspan="5">Carregando...</td></tr>';
+    try {
+      const dados = await listarDoacoes();
+      tb.innerHTML = dados.length ? dados.map(d => `
+        <tr>
+          <td>${d.doador}</td>
+          <td>${d.tipo}</td>
+          <td>${d.valor || '–'}</td>
+          <td>${badgeStatus(d.status)}</td>
+          <td>
+            ${d.status === 'pendente' ? `<button class="btn-add" style="font-size:12px;padding:4px 10px;" onclick="confirmarDoacao(${d.id})">Confirmar</button>` : ''}
+            <button class="btn-add" style="font-size:12px;padding:4px 10px;background:#ef4444;margin-left:4px;" onclick="excluirDoacao(${d.id})">✕</button>
+          </td>
+        </tr>`).join('') : '<tr class="empty-row"><td colspan="5">Nenhuma doação cadastrada</td></tr>';
+    } catch(e) { tb.innerHTML = `<tr class="empty-row"><td colspan="5">${e.message}</td></tr>`; }
+  }
+
+  function abrirModalDoacao() {
+    ['d-doador','d-valor','d-descricao'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('d-tipo').value = 'financeira';
+    document.getElementById('msg-doacao').style.display = 'none';
+    document.getElementById('modal-doacao').classList.add('open');
+  }
+
+  async function salvarDoacao() {
+    const msg = document.getElementById('msg-doacao');
+    const doador = document.getElementById('d-doador').value.trim();
+    if (!doador) { msg.textContent = 'Informe o nome do doador.'; msg.style.display='block'; return; }
+    try {
+      await criarDoacao({
+        doador, tipo: document.getElementById('d-tipo').value,
+        valor: document.getElementById('d-valor').value,
+        descricao: document.getElementById('d-descricao').value,
+      });
+      fecharModal('modal-doacao');
+      carregarDoacoes();
+    } catch(e) { msg.textContent = e.message; msg.style.display = 'block'; }
+  }
+
+  async function confirmarDoacao(id) {
+    try { await atualizarStatusDoacao(id, 'confirmada'); carregarDoacoes(); }
+    catch(e) { alert(e.message); }
+  }
+
+  async function excluirDoacao(id) {
+    if (!confirm('Excluir esta doação?')) return;
+    try { await deletarDoacao(id); carregarDoacoes(); }
+    catch(e) { alert(e.message); }
+  }
+
+  // ── VOLUNTÁRIOS ──────────────────────────────────────────
+  async function carregarVoluntarios() {
+    const tb = document.getElementById('tb-voluntarios');
+    tb.innerHTML = '<tr class="empty-row"><td colspan="5">Carregando...</td></tr>';
+    try {
+      const dados = await listarVoluntarios();
+      tb.innerHTML = dados.length ? dados.map(v => `
+        <tr>
+          <td>${v.nome}</td>
+          <td>${v.area || '–'}</td>
+          <td>${v.telefone || '–'}</td>
+          <td>${badgeStatus(v.ativo ? 'ativo' : 'inativo')}</td>
+          <td>
+            ${v.ativo ? `<button class="btn-add" style="font-size:12px;padding:4px 10px;background:#f59e0b;" onclick="desativarVol(${v.id})">Desativar</button>` : ''}
+            <button class="btn-add" style="font-size:12px;padding:4px 10px;background:#ef4444;margin-left:4px;" onclick="excluirVol(${v.id})">✕</button>
+          </td>
+        </tr>`).join('') : '<tr class="empty-row"><td colspan="5">Nenhum voluntário cadastrado</td></tr>';
+    } catch(e) { tb.innerHTML = `<tr class="empty-row"><td colspan="5">${e.message}</td></tr>`; }
+  }
+
+  function abrirModalVoluntario() {
+    ['v-nome','v-area','v-telefone','v-email'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('msg-voluntario').style.display = 'none';
+    document.getElementById('modal-voluntario').classList.add('open');
+  }
+
+  async function salvarVoluntario() {
+    const msg  = document.getElementById('msg-voluntario');
+    const nome = document.getElementById('v-nome').value.trim();
+    if (!nome) { msg.textContent = 'Informe o nome.'; msg.style.display='block'; return; }
+    try {
+      await criarVoluntario({
+        nome, area: document.getElementById('v-area').value,
+        telefone: document.getElementById('v-telefone').value,
+        email: document.getElementById('v-email').value,
+      });
+      fecharModal('modal-voluntario');
+      carregarVoluntarios();
+    } catch(e) { msg.textContent = e.message; msg.style.display = 'block'; }
+  }
+
+  async function desativarVol(id) {
+    try { await desativarVoluntario(id); carregarVoluntarios(); }
+    catch(e) { alert(e.message); }
+  }
+
+  async function excluirVol(id) {
+    if (!confirm('Excluir este voluntário?')) return;
+    try { await deletarVoluntario(id); carregarVoluntarios(); }
+    catch(e) { alert(e.message); }
+  }
+
+  // ── EVENTOS ──────────────────────────────────────────────
+  async function carregarEventos() {
+    const lock  = document.getElementById('lock-eventos');
+    const table = document.getElementById('table-eventos');
+    const btn   = document.getElementById('btn-novo-evento');
+    const tb    = document.getElementById('tb-eventos');
+
+    tb.innerHTML = '<tr class="empty-row"><td colspan="5">Carregando...</td></tr>';
+    try {
+      const dados = await listarEventos();
+      lock.style.display  = 'none';
+      table.style.display = '';
+      btn.style.display   = '';
+      tb.innerHTML = dados.length ? dados.map(e => `
+        <tr>
+          <td>${e.nome}</td>
+          <td><span class="badge blue">${e.tipo || '–'}</span></td>
+          <td>${formatarData(e.data)}</td>
+          <td>${e.local || '–'}</td>
+          <td><button class="btn-add" style="font-size:12px;padding:4px 10px;background:#ef4444;" onclick="excluirEvento(${e.id})">✕</button></td>
+        </tr>`).join('') : '<tr class="empty-row"><td colspan="5">Nenhum evento cadastrado</td></tr>';
+    } catch(e) {
+      if (e.message.includes('Impacto') || e.message.includes('403') || e.message.includes('upgrade')) {
+        lock.style.display  = 'block';
+        table.style.display = 'none';
+        btn.style.display   = 'none';
+      } else {
+        tb.innerHTML = `<tr class="empty-row"><td colspan="5">${e.message}</td></tr>`;
+      }
+    }
+  }
+
+  function abrirModalEvento() {
+    ['e-nome','e-local','e-descricao','e-data'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('e-tipo').value = 'adocao';
+    document.getElementById('msg-evento').style.display = 'none';
+    document.getElementById('modal-evento').classList.add('open');
+  }
+
+  async function salvarEvento() {
+    const msg  = document.getElementById('msg-evento');
+    const nome = document.getElementById('e-nome').value.trim();
+    const data = document.getElementById('e-data').value;
+    if (!nome || !data) { msg.textContent = 'Preencha nome e data.'; msg.style.display='block'; return; }
+    try {
+      await criarEvento({
+        nome, data, tipo: document.getElementById('e-tipo').value,
+        local: document.getElementById('e-local').value,
+        descricao: document.getElementById('e-descricao').value,
+      });
+      fecharModal('modal-evento');
+      carregarEventos();
+    } catch(e) { msg.textContent = e.message; msg.style.display = 'block'; }
+  }
+
+  async function excluirEvento(id) {
+    if (!confirm('Excluir este evento?')) return;
+    try { await deletarEvento(id); carregarEventos(); }
+    catch(e) { alert(e.message); }
+  }
+
+  // ── RELATÓRIOS ───────────────────────────────────────────
+  async function carregarRelatorios() {
+    const lock    = document.getElementById('lock-relatorios');
+    const content = document.getElementById('relatorio-content');
+    try {
+      const [geral, tipos] = await Promise.all([relatorioGeral(), relatorioDoacoesTipo()]);
+      lock.style.display    = 'none';
+      content.style.display = '';
+
+      document.getElementById('rel-metrics').innerHTML = `
+        <div class="metric-card"><div class="metric-icon orange">💰</div>
+          <div><div class="metric-val">R$ ${geral.doacoes.valor_arrecadado.toLocaleString('pt-BR',{minimumFractionDigits:2})}</div>
+          <div class="metric-label">Valor arrecadado</div></div></div>
+        <div class="metric-card"><div class="metric-icon blue">💛</div>
+          <div><div class="metric-val">${geral.doacoes.confirmadas}</div>
+          <div class="metric-label">Doações confirmadas</div></div></div>
+        <div class="metric-card"><div class="metric-icon green">👥</div>
+          <div><div class="metric-val">${geral.voluntarios.ativos}</div>
+          <div class="metric-label">Voluntários ativos</div></div></div>
+        <div class="metric-card"><div class="metric-icon purple">📅</div>
+          <div><div class="metric-val">${geral.eventos.total}</div>
+          <div class="metric-label">Total de eventos</div></div></div>`;
+
+      document.getElementById('tb-rel-tipos').innerHTML = tipos.map(t =>
+        `<tr><td>${t.tipo}</td><td>${t.quantidade}</td></tr>`
+      ).join('') || '<tr class="empty-row"><td colspan="2">Sem dados</td></tr>';
+
+    } catch(e) {
+      if (e.message.includes('Impacto') || e.message.includes('upgrade')) {
+        lock.style.display    = 'block';
+        content.style.display = 'none';
+      }
+    }
+  }
+
+  // ── Helpers ──────────────────────────────────────────────
+  function fecharModal(id) { document.getElementById(id).classList.remove('open'); }
+  function formatarData(d) {
+    if (!d) return '–';
+    const [y,m,dia] = d.split('-');
+    return `${dia}/${m}/${y}`;
+  }
+
+  // Fecha modal clicando fora
+  document.querySelectorAll('.modal-overlay').forEach(el => {
+    el.addEventListener('click', e => { if (e.target === el) el.classList.remove('open'); });
+  });
+
+  // Carrega o dashboard ao abrir
+  carregarDashboard();
+</script>
+</body>
+</html>
