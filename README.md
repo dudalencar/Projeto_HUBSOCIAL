@@ -6,4 +6,5 @@ Projeto 5 semestre
 # Necessário rodar o pyhton no terminal, com os seguintes comandos:
 
 venv\Scripts\Activate.ps1
+
 py -m uvicorn app:app --reload
