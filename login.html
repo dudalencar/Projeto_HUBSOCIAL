@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Login – Hub Social</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<header class="navbar">
+  <div class="nav-container">
+    <a href="index.html" class="nav-logo">
+      <img src="img/logo_novo.png" alt="Hub Social" class="logo-img" />
+    </a>
+    <div class="nav-actions" style="margin-left:auto;">
+      <a href="login.html" class="btn-login">Entrar</a>
+      <a href="cadastro.html" class="btn-cadastro">Cadastre-se</a>
+    </div>
+  </div>
+</header>
+
+<main class="auth-page">
+  <div class="auth-card">
+    <div class="auth-logo">
+      <img src="img/logo_hubsocial_.png" alt="Hub Social" />
+    </div>
+    <h2>Bem-vindo de volta</h2>
+    <p class="auth-sub">Entre com suas credenciais para acessar o sistema</p>
+
+    <div class="form-group">
+      <label for="email">E-mail</label>
+      <input type="email" id="email" placeholder="sua@ong.org.br" autocomplete="email" />
+    </div>
+    <div class="form-group">
+      <label for="senha">Senha</label>
+      <input type="password" id="senha" placeholder="••••••••" autocomplete="current-password" />
+    </div>
+    <div style="text-align:right; margin-bottom:12px;">
+      <a href="#" style="font-size:13px; color:var(--blue-light); font-weight:600;">Esqueci minha senha</a>
+    </div>
+
+    <button class="btn-form" id="btnLogin" onclick="fazerLogin()">Entrar</button>
+
+    <div id="msgError" style="display:none; margin-top:14px; color:#ef4444; background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:10px 14px; font-size:14px;"></div>
+
+    <div class="auth-footer">
+      Não tem conta? <a href="cadastro.html">Cadastre-se gratuitamente</a>
+    </div>
+  </div>
+</main>
+
+<script>
+// api.js
+// Conecta o front-end HTML com a API FastAPI (http://localhost:8000)
+// Coloque este arquivo na mesma pasta do index.html
+
+const API_URL = "http://localhost:8000";
+
+// ── Helpers de token (localStorage) ─────────────────────────
+
+function salvarToken(token, dados) {
+  localStorage.setItem("hs_token",    token);
+  localStorage.setItem("hs_nome",     dados.nome);
+  localStorage.setItem("hs_nome_ong", dados.nome_ong);
+  localStorage.setItem("hs_plano",    dados.plano);
+  localStorage.setItem("hs_id",       dados.usuario_id);
+}
+
+function getToken()   { return localStorage.getItem("hs_token");    }
+function getNome()    { return localStorage.getItem("hs_nome");     }
+function getOng()     { return localStorage.getItem("hs_nome_ong"); }
+function getPlano()   { return localStorage.getItem("hs_plano");    }
+function estaLogado() { return !!getToken(); }
+
+function logout() {
+  localStorage.clear();
+  window.location.href = "login.html";
+}
+
+// ── Request helper com JWT ───────────────────────────────────
+
+async function apiFetch(path, options = {}) {
+  const token = getToken();
+  const headers = {
+    "Content-Type": "application/json",
+    ...(token ? { "Authorization": `Bearer ${token}` } : {}),
+    ...(options.headers || {}),
+  };
+
+  const res = await fetch(`${API_URL}${path}`, { ...options, headers });
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    const msg = data.detail || `Erro ${res.status}`;
+    throw new Error(Array.isArray(msg) ? msg.map(e => e.msg).join(", ") : msg);
+  }
+  return data;
+}
+
+// ── AUTH ─────────────────────────────────────────────────────
+
+async function cadastrar(payload) {
+  const data = await apiFetch("/auth/cadastro", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+  salvarToken(data.access_token, data);
+  return data;
+}
+
+async function login(email, senha) {
+  // OAuth2PasswordRequestForm espera form-data, não JSON
+  const form = new URLSearchParams();
+  form.append("username", email);
+  form.append("password", senha);
+
+  const res = await fetch(`${API_URL}/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: form,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Erro ao fazer login.");
+  salvarToken(data.access_token, data);
+  return data;
+}
+
+async function getMeuPerfil() {
+  return apiFetch("/auth/me");
+}
+
+// ── DOAÇÕES ──────────────────────────────────────────────────
+
+async function listarDoacoes()        { return apiFetch("/doacoes/"); }
+async function criarDoacao(payload)   { return apiFetch("/doacoes/", { method: "POST", body: JSON.stringify(payload) }); }
+async function deletarDoacao(id)      { return apiFetch(`/doacoes/${id}`, { method: "DELETE" }); }
+async function atualizarStatusDoacao(id, status) {
+  return apiFetch(`/doacoes/${id}/status?novo_status=${status}`, { method: "PATCH" });
+}
+
+// ── VOLUNTÁRIOS ──────────────────────────────────────────────
+
+async function listarVoluntarios()       { return apiFetch("/voluntarios/"); }
+async function criarVoluntario(payload)  { return apiFetch("/voluntarios/", { method: "POST", body: JSON.stringify(payload) }); }
+async function deletarVoluntario(id)     { return apiFetch(`/voluntarios/${id}`, { method: "DELETE" }); }
+async function desativarVoluntario(id)   { return apiFetch(`/voluntarios/${id}/desativar`, { method: "PATCH" }); }
+
+// ── EVENTOS ──────────────────────────────────────────────────
+
+async function listarEventos()          { return apiFetch("/eventos/"); }
+async function criarEvento(payload)     { return apiFetch("/eventos/", { method: "POST", body: JSON.stringify(payload) }); }
+async function editarEvento(id, dados)  { return apiFetch(`/eventos/${id}`, { method: "PUT",  body: JSON.stringify(dados) }); }
+async function deletarEvento(id)        { return apiFetch(`/eventos/${id}`, { method: "DELETE" }); }
+
+// ── RELATÓRIOS ───────────────────────────────────────────────
+
+async function relatorioGeral()         { return apiFetch("/relatorios/visao-geral"); }
+async function relatorioDoacoesTipo()   { return apiFetch("/relatorios/doacoes-por-tipo"); }
+
+// ── Proteção de página: redireciona se não estiver logado ────
+
+function exigirLogin() {
+  if (!estaLogado()) {
+    window.location.href = "login.html";
+  }
+}
+
+// ── Preenche dados do usuário no dashboard ───────────────────
+
+function preencherDashboard() {
+  exigirLogin();
+  const nome  = getNome()?.split(" ")[0] || "Usuário";
+  const ong   = getOng()  || "Minha ONG";
+  const plano = getPlano() || "semente";
+
+  const elNome  = document.getElementById("dash-user-name");
+  const elOng   = document.getElementById("sb-ong");
+  const elTitulo= document.getElementById("dash-titulo");
+  const elAvatar= document.getElementById("dash-avatar");
+  const elPlano = document.getElementById("sb-plano");
+
+  if (elNome)   elNome.textContent   = `Olá, ${nome}!`;
+  if (elOng)    elOng.textContent    = ong;
+  if (elTitulo) elTitulo.textContent = `Bem-vindo(a), ${nome} 👋`;
+  if (elAvatar) elAvatar.textContent = nome[0].toUpperCase();
+  if (elPlano)  elPlano.textContent  = `Plano ${plano.charAt(0).toUpperCase() + plano.slice(1)}`;
+}
+
+</script>
+<script>
+  // Se já estiver logado, vai direto pro dashboard
+  if (estaLogado()) window.location.href = 'dashboard.html';
+
+  async function fazerLogin() {
+    const email = document.getElementById('email').value.trim();
+    const senha = document.getElementById('senha').value;
+    const msg   = document.getElementById('msgError');
+    const btn   = document.getElementById('btnLogin');
+
+    msg.style.display = 'none';
+
+    if (!email || !senha) {
+      msg.textContent = 'Por favor, preencha todos os campos.';
+      msg.style.display = 'block'; return;
+    }
+    if (!email.includes('@')) {
+      msg.textContent = 'Insira um e-mail válido.';
+      msg.style.display = 'block'; return;
+    }
+
+    btn.textContent = 'Entrando...';
+    btn.disabled = true;
+
+    try {
+      await login(email, senha);
+      window.location.href = 'dashboard.html';
+    } catch (e) {
+      msg.textContent = e.message;
+      msg.style.display = 'block';
+      btn.textContent = 'Entrar';
+      btn.disabled = false;
+    }
+  }
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Enter') fazerLogin();
+  });
+</script>
+</body>
+</html>
